@@ -39,7 +39,7 @@ subjects=( "${subjects[@]/#/sub-}" )
 
 
 # moneymaker here, runs all the subjects through recon-all at one time. will output to $SUBJECT_DIR
-parallel --link -j ${#subjects[@]} recon-all -s {} -i $mriDataDir/{}/$dicomLocation/*0001.dcm -all ::: ${subjects[@]}
+parallel --link -j ${#subjects[@]} recon-all -s {} -i $mriDataDir/{}/$dicomLocation/*0001.dcm -all -clean-bm  ::: ${subjects[@]}
 
 echo Starting freesurfer subcortical...
 
