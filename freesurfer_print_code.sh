@@ -3,7 +3,8 @@
 mriDataDir=/Volumes/Yorick/MriRawData
 dicomLocation=ses-emdm/dicom/[Tt]1*
 ORIGINAL_SUBJECTS_DIR=$SUBJECTS_DIR
-export SUBJECTS_DIR=/Volumes/Yorick/3dPrint/archived_freesurfer_subjects
+#export SUBJECTS_DIR=/Volumes/Yorick/3dPrint/archived_freesurfer_subjects
+export SUBJECTS_DIR=/Users/nielsturley/Desktop
 
 read -p $'\nInput all of the subject numbers to print, separated by spaces (max 10)\n' -a subjects
 while [[ ${#subjects[@]} -gt 10 ]]; do
@@ -24,26 +25,62 @@ if [[ $changeDicomDir == "y" ]]; then
 	read -p $'Input new dicom location: ' dicomLocation
 fi
 
-read -p $'\n'"Do you need to change the archive directory?"$'\n'"Currently set as: $SUBJECTS_DIR"$'\n'"[input 'y' to change, anything else to continue]"$'\n' changeArchiveDir
-if [[ $changeArchiveDir == "y" ]]; then
-	read -p $'Input new dicom location: ' $SUBJECTS_DIR
+read -p $'\n'"Do you need to change the freesurfer output directory?"$'\n'"Currently set as: $SUBJECTS_DIR"$'\n'"[input 'y' to change, anything else to continue]"$'\n' changeOutputDir
+if [[ $changeOutputDir == "y" ]]; then
+	read -p $'Input new output location: ' SUBJECTS_DIR
 fi
 
 read -p $'\n'"Final check before starting...
-Subjects: ${subjects[@]}
+Subject(s): ${subjects[@]}
 Mri data directory: $mriDataDir
 Dicom location: $dicomLocation
+Freesufer output directory: $SUBJECTS_DIR
 NOTE!! This will begin the freesurfer recon-all command, which takes 5-7 hours to finish"$'\n'"[input 'y' to stop, anything else to continue]"$'\n' beginPrint
 if [[ $beginPrint == "y" ]]; then
 	exit 0
 fi
 
-
-echo Starting freesurfer cortical...
-
 # append 'sub-' to the subjects for convenience
 subjects=( "${subjects[@]/#/sub-}" )
 
+# check if subject folders already exist
+subjects_to_skip=()
+skip_prompt=false
+for subject in "${subjects[@]}"; do
+	folder_path="$SUBJECTS_DIR/$subject"
+
+	if [[ -d "$folder_path" ]]; then
+		if [[ "$skip_prompt" = false ]]; then
+			read -p $'\n'"Folder already exists for $subject. Do you want to overwrite it?"$'\n'"'y' will PERMANENTLY DELETE the old freesurfer data for $subject"$'\n'"'n' will skip the processing for this subject"$'\n'"'all' will PERMANENTLY DELETE the old freesurfer data for all existing folders in this batch of subjects"$'\n'"(y/n/all): " choice
+
+			case "$choice" in
+				y|Y )
+					rm -r "$folder_path"
+					echo "Folder removed for $subject."
+					;;
+				n|N )
+					echo "Skip processing for $subject."
+					subjects_to_skip+=("$subject")
+					;;
+				all|ALL )
+					echo "Removing all existing folders."
+					rm -r "$folder_path"
+					echo "Folder removed for $subject."
+					skip_prompt=true
+					;;
+				* )
+					echo "Invalid choice. Skipping removal for subject $subject."
+					;;
+			esac
+		else
+			rm -r "$folder_path"
+			echo "Folder removed for $subject."
+		fi
+	fi
+done
+subjects=("${subjects[@]/${subjects_to_skip[@]}}")
+
+echo Starting freesurfer cortical...
 
 # moneymaker here, runs all the subjects through recon-all at one time. will output to $SUBJECTS_DIR
 parallel --link -j ${#subjects[@]} recon-all -s {} -i $mriDataDir/{}/$dicomLocation/*0001.dcm -all -clean-bm ::: ${subjects[@]}
