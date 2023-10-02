@@ -2,6 +2,8 @@
 
 mriDataDir=/Volumes/Yorick/MriRawData
 dicomLocation=ses-emdm/dicom/[Tt]1*
+ORIGINAL_SUBJECTS_DIR=$SUBJECTS_DIR
+export SUBJECTS_DIR=/Volumes/Yorick/3dPrint/archived_freesurfer_subjects
 
 read -p $'\nInput all of the subject numbers to print, separated by spaces (max 10)\n' -a subjects
 while [[ ${#subjects[@]} -gt 10 ]]; do
@@ -22,6 +24,11 @@ if [[ $changeDicomDir == "y" ]]; then
 	read -p $'Input new dicom location: ' dicomLocation
 fi
 
+read -p $'\n'"Do you need to change the archive directory?"$'\n'"Currently set as: $SUBJECTS_DIR"$'\n'"[input 'y' to change, anything else to continue]"$'\n' changeArchiveDir
+if [[ $changeArchiveDir == "y" ]]; then
+	read -p $'Input new dicom location: ' $SUBJECTS_DIR
+fi
+
 read -p $'\n'"Final check before starting...
 Subjects: ${subjects[@]}
 Mri data directory: $mriDataDir
@@ -38,8 +45,8 @@ echo Starting freesurfer cortical...
 subjects=( "${subjects[@]/#/sub-}" )
 
 
-# moneymaker here, runs all the subjects through recon-all at one time. will output to $SUBJECT_DIR
-parallel --link -j ${#subjects[@]} recon-all -s {} -i $mriDataDir/{}/$dicomLocation/*0001.dcm -all -clean-bm --dry-run ::: ${subjects[@]}
+# moneymaker here, runs all the subjects through recon-all at one time. will output to $SUBJECTS_DIR
+parallel --link -j ${#subjects[@]} recon-all -s {} -i $mriDataDir/{}/$dicomLocation/*0001.dcm -all -clean-bm ::: ${subjects[@]}
 
 echo Starting freesurfer subcortical...
 
@@ -85,3 +92,5 @@ for i in ${!subjects[@]}; do
 	python /Volumes/Yorick/3dPrint/freesurfer_print_code/brain_smoothing.py $printDir
 
 done
+
+export SUBJECTS_DIR=$ORIGINAL_SUBJECTS_DIR
