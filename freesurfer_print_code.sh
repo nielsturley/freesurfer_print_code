@@ -3,8 +3,8 @@
 mriDataDir=/Volumes/Yorick/MriRawData
 dicomLocation=ses-emdm/dicom/[Tt]1*
 ORIGINAL_SUBJECTS_DIR=$SUBJECTS_DIR
-#export SUBJECTS_DIR=/Volumes/Yorick/3dPrint/archived_freesurfer_subjects
-export SUBJECTS_DIR=/Users/nielsturley/Desktop
+export SUBJECTS_DIR=/Volumes/Yorick/3dPrint/archived_freesurfer_subjects
+
 
 read -p $'\nInput all of the subject numbers to print, separated by spaces (max 10)\n' -a subjects
 while [[ ${#subjects[@]} -gt 10 ]]; do
